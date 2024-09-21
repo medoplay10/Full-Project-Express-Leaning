@@ -8,27 +8,35 @@ export const authMiddleware = async (
   res: Response,
   next: any
 ) => {
+  // Extract the access token from the authorization header
   const accessToken = req.headers.authorization;
+
+  // If no access token is provided, return an unauthorized status
   if (!accessToken) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
+    // Check if the access token is in the list of invalidated tokens
     const accessTokenFind = await InvalidTokenModel.findOne({
       token: accessToken,
     });
+
+    // If the token is found in the invalid tokens database, return an unauthorized status
     if (accessTokenFind) {
       return res.status(401).json({ message: "Unauthorized: Invalid token" });
     }
 
-    var decoded = jwt.verify(accessToken, process.env.JWT_SECRET!);
+    // Verify the token using the secret key from environment variables
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!);
 
+    // Attach user information and token details to the request object
     req.user = {
-      id: (decoded as JwtPayload).id,
+      id: (decoded as JwtPayload).id, // Assumed 'id' is part of the token's payload
     };
     req.accessToken = {
       value: accessToken,
-      expireAt: new Date((decoded as JwtPayload).exp! * 1000),
+      expireAt: new Date((decoded as JwtPayload).exp! * 1000), // Convert expiration time from seconds to milliseconds
     };
     next();
   } catch (error) {
