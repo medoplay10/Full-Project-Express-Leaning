@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import "dotenv/config";
-import { InvalidTokenModel } from "../modules/auth/invalid-token.model";
+import { InvalidTokenModel } from "../modules/auth/models/invalid-token.model";
 
 export const authMiddleware = async (
   req: Request,

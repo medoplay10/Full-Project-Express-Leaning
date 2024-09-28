@@ -1,22 +1,20 @@
 import { isGeneratorFunction } from "util/types";
 import { UserModel } from "../user/user.model";
-import { RefreshTokenModel } from "../auth/refresh-token.model";
-import { InvalidTokenModel } from "../auth/invalid-token.model";
+
 import bcrypt from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import "dotenv/config";
 import { console } from "inspector";
+import { RefreshTokenModel } from "./models/refresh-token.model";
+import { InvalidTokenModel } from "./models/invalid-token.model";
 
-
+import { registerAuthSchema } from "../auth/dto/requests/register-auth.req";
+import Joi from "joi";
 // Handles new user registration
-const register = async (req :any, res:any) => {
+const register =   async (req: any, res: any) => {
   try {
+    
     const { name, email, password, role } = req.body;
-
-    // Check if all required fields are provided
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
 
     // Check if the user already exists
     if (await UserModel.findOne({ email })) {
@@ -39,14 +37,11 @@ const register = async (req :any, res:any) => {
 };
 
 // Handles user login
-const login = async (req :any, res:any) => {
+const login = async (req: any, res: any) => {
   try {
     const { email, password } = req.body;
 
-    // Validate presence of email and password
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+
 
     // Find the user by email
     const userFind = await UserModel.findOne({ email });
@@ -78,7 +73,7 @@ const login = async (req :any, res:any) => {
     const refreshTokenModel = new RefreshTokenModel({
       token: refreshToken,
       user: userFind._id,
-      expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiredAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     });
     await refreshTokenModel.save();
 
@@ -101,7 +96,7 @@ const login = async (req :any, res:any) => {
 };
 
 // Handles token refreshing
-const refreshToken = async (req :any, res:any) => {
+const refreshToken = async (req: any, res: any) => {
   try {
     const { refreshToken } = req.body;
 
@@ -115,9 +110,14 @@ const refreshToken = async (req :any, res:any) => {
     const userId = (decoded as JwtPayload).id;
 
     // Check if the token is stored and valid
-    const refreshTokenFind = await RefreshTokenModel.findOne({ token: refreshToken, user: userId });
+    const refreshTokenFind = await RefreshTokenModel.findOne({
+      token: refreshToken,
+      user: userId,
+    });
     if (!refreshTokenFind || refreshTokenFind.expiredAt < new Date()) {
-      return res.status(400).json({ message: "Refresh token is invalid or expired" });
+      return res
+        .status(400)
+        .json({ message: "Refresh token is invalid or expired" });
     }
 
     // Delete the old refresh token
@@ -155,9 +155,8 @@ const refreshToken = async (req :any, res:any) => {
   }
 };
 
-
 // Handles user logout
-const logout = async (req :any, res:any)=> {
+const logout = async (req: any, res: any) => {
   try {
     const { userId } = req.user;
 
@@ -180,4 +179,4 @@ const logout = async (req :any, res:any)=> {
   }
 };
 
-export { register, login, refreshToken ,logout};
+export { register, login, refreshToken, logout };
